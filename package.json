@@ -1,0 +1,28 @@
+{
+  "name": "minhas-financas",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Controle pessoal de entradas, saídas e despesas fixas com Cloudflare Workers e D1.",
+  "scripts": {
+    "dev": "cf dev",
+    "build": "cf build",
+    "deploy": "cf deploy",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.worker.json --noEmit",
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "test:demo": "node test/demo.mjs",
+    "test:browser": "node test/browser.mjs",
+    "test:auth": "node test/auth.mjs",
+    "setup:local": "node scripts/setup-local.mjs",
+    "db:local": "node scripts/seed-local.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "2.0.0-rc.3",
+    "@cloudflare/workers-types": "latest",
+    "@types/node": "latest",
+    "cf": "1.0.0-rc.2",
+    "playwright": "latest",
+    "typescript": "latest",
+    "vite": "8.3.8"
+  }
+}
