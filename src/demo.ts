@@ -8,6 +8,11 @@ export const DEMO_DATE = '2026-06-18';
 export function createDemoData(): Data {
   return {
     today: DEMO_DATE,
+    shopping: [
+      { id: 'demo-shopping-1', description: 'Cadeira para escritório', amount: 65000 },
+      { id: 'demo-shopping-2', description: 'Fone de ouvido', amount: 18000 },
+      { id: 'demo-shopping-3', description: 'Luminária de mesa', amount: 8500 },
+    ],
     accounts: [
       { id: 'PF', opening_balance: 180000, opening_date: '2026-06-01' },
       { id: 'PJ', opening_balance: 90000, opening_date: '2026-06-01' },

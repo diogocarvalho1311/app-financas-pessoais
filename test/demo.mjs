@@ -39,6 +39,15 @@ try {
   assert.equal(await page.locator('.monthly-summary tbody tr').count(), 3);
   await page.getByRole('button', { name: 'Despesas fixas', exact: true }).click();
   assert.equal(await page.locator('.fixed-card').count(), 4);
+  await page.getByRole('button', { name: 'Lista de compras', exact: true }).click();
+  assert.equal(await page.locator('.shopping-panel tbody tr').count(), 3);
+  assert.match(await page.locator('.shopping-total').innerText(), /915,00/);
+  assert.equal(await page.locator('[data-edit-shopping], [data-delete-shopping], [data-action="new-shopping"]').count(), 0);
+  for (const width of [1440, 1024, 768, 320]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Shopping layout overflow at ${width}`);
+  }
+  await page.setViewportSize({ width: 1440, height: 1100 });
   await page.getByRole('button', { name: 'Contas', exact: true }).click();
   await page.getByRole('heading', { name: 'Conta PF', exact: true }).waitFor();
   assert.equal(await page.getByRole('button', { name: 'Alterar senha' }).count(), 0);

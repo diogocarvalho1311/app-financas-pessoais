@@ -13,6 +13,7 @@
     "test:demo": "node test/demo.mjs",
     "test:browser": "node test/browser.mjs",
     "test:auth": "node test/auth.mjs",
+    "test:shopping": "node test/shopping.mjs",
     "setup:local": "node scripts/setup-local.mjs",
     "db:local": "node scripts/seed-local.mjs"
   },

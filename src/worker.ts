@@ -145,12 +145,36 @@ async function api(request: Request, env: Env): Promise<Response> {
   }
   if (path === '/api/data' && method === 'GET') {
     await reconcile(env.DB);
-    const [accounts, transactions, fixed] = await env.DB.batch([
+    const [accounts, transactions, fixed, shopping] = await env.DB.batch([
       env.DB.prepare('SELECT * FROM accounts ORDER BY id'),
       env.DB.prepare('SELECT * FROM transactions WHERE deleted=0 ORDER BY date DESC,created_at DESC'),
       env.DB.prepare('SELECT * FROM fixed_expenses ORDER BY description'),
+      env.DB.prepare('SELECT id,description,amount FROM shopping_items ORDER BY created_at DESC,id DESC'),
     ]);
-    return Response.json({ accounts: accounts.results, transactions: transactions.results, fixed: fixed.results, today: today() });
+    return Response.json({ accounts: accounts.results, transactions: transactions.results, fixed: fixed.results, shopping: shopping.results, today: today() });
+  }
+  // Wishlist mutations require the same session and same-origin checks as ledger entries.
+  const shoppingMatch = path.match(/^\/api\/shopping(?:\/([\w-]+))?$/);
+  if (shoppingMatch && ['POST', 'PUT', 'DELETE'].includes(method)) {
+    const id = shoppingMatch[1];
+    if ((method === 'POST') === Boolean(id)) throw new HttpError('Operação inválida.');
+    if (method === 'DELETE') {
+      const result = await env.DB.prepare('DELETE FROM shopping_items WHERE id=?').bind(id).run();
+      if (!result.meta.changes) throw new HttpError('Item não encontrado.', 404);
+    } else {
+      const data = await body(request);
+      const description = typeof data.description === 'string' ? data.description.trim() : '';
+      if (!description || description.length > 100) throw new HttpError('O nome do item deve ter de 1 a 100 caracteres.');
+      if (typeof data.amount !== 'number' || !Number.isSafeInteger(data.amount) || data.amount <= 0 || data.amount > 99999999999) throw new HttpError('Informe um valor estimado maior que zero.');
+      if (method === 'POST') {
+        const newId = typeof data.id === 'string' && /^[a-f0-9-]{36}$/.test(data.id) ? data.id : crypto.randomUUID();
+        await env.DB.prepare('INSERT INTO shopping_items (id,description,amount) VALUES (?,?,?) ON CONFLICT(id) DO NOTHING').bind(newId, description, data.amount).run();
+      } else {
+        const result = await env.DB.prepare('UPDATE shopping_items SET description=?,amount=? WHERE id=?').bind(description, data.amount, id).run();
+        if (!result.meta.changes) throw new HttpError('Item não encontrado.', 404);
+      }
+    }
+    return Response.json({ ok: true });
   }
   if (/^\/api\/accounts\/(PF|PJ)$/.test(path) && method === 'PUT') {
     const data = await body(request);

@@ -1,13 +1,13 @@
 /** Shared, escaped markup and Brazilian formatting for the browser UI. */
-import type { Account, FixedExpense, Transaction } from './finance';
+import type { Account, FixedExpense, ShoppingItem, Transaction } from './finance';
 
 /** Snapshot returned by the authenticated API; never stored in browser localStorage. */
-export interface Data { accounts: Account[]; transactions: Transaction[]; fixed: FixedExpense[]; today: string }
+export interface Data { accounts: Account[]; transactions: Transaction[]; fixed: FixedExpense[]; shopping: ShoppingItem[]; today: string }
 /** Navigation and filtering state for the single desktop workspace. */
 export interface State {
   /** Public demo mode renders fictional in-memory records and disables private actions. */
   demo?: boolean;
-  data: Data; tab: 'transactions' | 'dashboard' | 'fixed' | 'accounts';
+  data: Data; tab: 'transactions' | 'dashboard' | 'fixed' | 'shopping' | 'accounts';
   mode: 'month' | 'custom'; month: string; from: string; to: string;
   account: string; kind: string; query: string; page: number;
 }
@@ -48,6 +48,7 @@ export function icon(name: string): string {
     heart: '<path d="M20.5 5.5a5 5 0 0 0-7 0L12 7l-1.5-1.5a5 5 0 0 0-7 7L12 21l8.5-8.5a5 5 0 0 0 0-7Z"/>',
     cloud: '<path d="M6 18a5 5 0 1 1 1-9 6 6 0 0 1 11-1 5 5 0 1 1 1 10Z"/>',
     receipt: '<path d="M5 3v18l3-2 4 2 4-2 3 2V3l-3 2-4-2-4 2ZM9 9h6M9 13h6"/>',
+    cart: '<path d="M3 3h2l3 12h11l2-8H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/>',
   };
   return `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] ?? paths.wallet}</svg>`;
 }

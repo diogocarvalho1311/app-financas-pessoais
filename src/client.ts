@@ -1,7 +1,7 @@
 /** Browser controller. The server is the source of truth; no financial data is cached locally. */
 import './style.css';
 import { today, validDate } from './finance';
-import { accountForm, deleteForm, fixedForm, passwordForm, payForm, transactionForm } from './forms';
+import { accountForm, deleteForm, deleteShoppingForm, fixedForm, passwordForm, payForm, shoppingForm, transactionForm } from './forms';
 import { api, dateLabel, esc, rows, toast, type Data, type State } from './ui';
 import { loginView, view } from './views';
 import { createDemoData, DEMO_DATE } from './demo';
@@ -11,7 +11,7 @@ const demo = /^\/demo\/?$/.test(location.pathname);
 const date = demo ? DEMO_DATE : today();
 const state: State = {
   demo,
-  data: demo ? createDemoData() : { accounts: [], transactions: [], fixed: [], today: date },
+  data: demo ? createDemoData() : { accounts: [], transactions: [], fixed: [], shopping: [], today: date },
   tab: 'transactions', mode: 'month', month: date.slice(0, 7), from: `${date.slice(0, 7)}-01`, to: date,
   account: 'all', kind: 'all', query: '', page: 1,
 };
@@ -48,7 +48,7 @@ async function refresh(): Promise<void> {
 function login(error = ''): void {
   refreshVersion++;
   loggedIn = false;
-  state.data = { accounts: [], transactions: [], fixed: [], today: today() };
+  state.data = { accounts: [], transactions: [], fixed: [], shopping: [], today: today() };
   document.querySelector<HTMLDialogElement>('#modal')!.close();
   app.innerHTML = loginView(error);
   app.querySelector<HTMLInputElement>('[name=password]')?.focus();
@@ -85,6 +85,9 @@ app.addEventListener('click', async event => {
   }
   const item = state.data.transactions.find(t => t.id === (d.edit ?? d.delete));
   const rule = state.data.fixed.find(f => f.id === (d.editFixed ?? d.pay));
+  const wish = state.data.shopping.find(s => s.id === (d.editShopping ?? d.deleteShopping));
+  if (d.editShopping && wish) shoppingForm(refresh, wish);
+  if (d.deleteShopping && wish) deleteShoppingForm(refresh, wish);
   if (d.edit && item) transactionForm(state, refresh, item);
   if (d.delete && item) deleteForm(refresh, item);
   if (d.editFixed && rule) fixedForm(state, refresh, rule);
@@ -92,6 +95,7 @@ app.addEventListener('click', async event => {
   if (d.editAccount) accountForm(state, refresh, d.editAccount);
   if (d.action === 'new-transaction') transactionForm(state, refresh);
   if (d.action === 'new-fixed') fixedForm(state, refresh);
+  if (d.action === 'new-shopping') shoppingForm(refresh);
   if (d.action === 'password') passwordForm();
   if (d.action === 'clear-filters') { state.account = 'all'; state.kind = 'all'; state.query = ''; state.page = 1; render(); }
   if (d.action === 'export') exportCsv();

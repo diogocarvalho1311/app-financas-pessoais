@@ -1,12 +1,15 @@
 /** Initializes the local D1 simulation after npm run dev; never contacts production. */
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { addDays, today } from '../src/finance.ts';
 
 const explorer = 'http://127.0.0.1:5173/cdn-cgi/local/explorer/api';
 const bindings = await (await fetch(`${explorer}/d1/database`)).json();
 const database = bindings.result?.find(binding => binding.name === 'DB');
 if (!database) throw new Error('Inicie npm run dev com o binding DB configurado.');
-let sql = await readFile(new URL('../migrations/0001_initial.sql', import.meta.url), 'utf8');
+// Apply every additive migration in order for both new and existing local databases.
+const migrations = new URL('../migrations/', import.meta.url);
+const files = (await readdir(migrations)).filter(file => file.endsWith('.sql')).sort();
+let sql = (await Promise.all(files.map(file => readFile(new URL(file, migrations), 'utf8')))).join('\n');
 if (process.argv.includes('--fixtures')) {
   const date = today();
   const previous = new Date(`${date.slice(0, 7)}-01T12:00:00Z`);

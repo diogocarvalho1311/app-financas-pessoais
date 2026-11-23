@@ -1,5 +1,5 @@
 /** Accessible native dialogs for editing entries, recurrence rules and account snapshots. */
-import { addDays, CATEGORIES, parseMoney, type FixedExpense, type Transaction } from './finance';
+import { addDays, CATEGORIES, parseMoney, type FixedExpense, type ShoppingItem, type Transaction } from './finance';
 import { api, dateLabel, esc, icon, money, moneyInput, monthLabel, toast, type State } from './ui';
 
 const modal = document.querySelector<HTMLDialogElement>('#modal')!;
@@ -48,6 +48,22 @@ export function transactionForm(state: State, refresh: () => Promise<void>, item
     await api(`/transactions${item ? `/${item.id}` : ''}`, item ? 'PUT' : 'POST', { id, description: form.get('description'), amount: parseMoney(String(form.get('amount'))), account: form.get('account'), category: form.get('category'), kind: form.get('kind'), date: form.get('date') });
     await refresh(); toast(item ? 'Lançamento atualizado.' : 'Lançamento adicionado.');
   });
+}
+
+/** Saves a purchase wish without creating a transaction or changing any account balance. */
+export function shoppingForm(refresh: () => Promise<void>, item?: ShoppingItem): void {
+  const id = item?.id ?? crypto.randomUUID();
+  dialog(item ? 'Editar item' : 'Adicionar item', `<p class="dialog-intro">Guarde o que quer comprar e quanto pretende gastar. O valor é apenas uma estimativa.</p><div class="form-grid">${input('Nome do item', 'description', item?.description ?? '', 'text', 'required maxlength="100" placeholder="Ex.: cadeira para escritório"', true)}${input('Valor estimado (R$)', 'amount', item ? moneyInput(item.amount) : '', 'text', 'required inputmode="decimal" placeholder="0,00"', true)}</div>`, async form => {
+    await api(`/shopping${item ? `/${item.id}` : ''}`, item ? 'PUT' : 'POST', { id, description: form.get('description'), amount: parseMoney(String(form.get('amount'))) });
+    await refresh(); toast(item ? 'Item atualizado.' : 'Item adicionado à lista.');
+  });
+}
+
+/** Confirms removal from the wishlist; the financial ledger is unaffected. */
+export function deleteShoppingForm(refresh: () => Promise<void>, item: ShoppingItem): void {
+  dialog('Remover item?', `<p><strong>${esc(item.description)}</strong></p><div class="confirm-amount">${money(item.amount)}</div><p class="dialog-intro">Este item será removido da sua lista de compras.</p>`, async () => {
+    await api(`/shopping/${item.id}`, 'DELETE'); await refresh(); toast('Item removido da lista.');
+  }, 'Remover item', true);
 }
 
 /** Changes future occurrences without silently modifying past transactions. */

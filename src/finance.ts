@@ -11,6 +11,9 @@ export interface Transaction {
 /** Opening balances form a snapshot; earlier history does not change that snapshot. */
 export interface Account { id: 'PF' | 'PJ'; opening_balance: number; opening_date: string }
 
+/** A purchase wish with an estimated price in cents; never contributes to account balances. */
+export interface ShoppingItem { id: string; description: string; amount: number }
+
 /** Monthly expenses without deadlines are paid explicitly, after salary arrives. */
 export interface FixedExpense {
   id: string; description: string; amount: number; account: 'PF' | 'PJ'; category: string;

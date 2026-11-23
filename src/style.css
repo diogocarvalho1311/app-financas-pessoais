@@ -58,3 +58,9 @@
 @media(max-width:760px){.page-heading,.panel-heading{flex-wrap:wrap}.heading-copy{min-width:0;flex:1 1 280px}.field{min-width:0}}
 /* The public preview is clearly labeled and keeps the same desktop workspace. */
 .demo-banner{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;padding:12px 24px;background:var(--mint);border-bottom:var(--line);font-size:14px;text-align:center}
+/* Five horizontal tabs wrap as one row before they crowd the desktop header. */
+@media(max-width:1250px){.topbar-inner{flex-wrap:wrap}.nav{order:3;width:100%;min-width:0;overflow:auto}.topbar-end{margin-left:auto}}
+/* Wishlist totals use the existing mint accent; the compact table scrolls within its panel. */
+.shopping-total{background:var(--mint);color:#26382e}.shopping-total strong{color:#000;font-size:20px;margin-left:12px;font-variant-numeric:tabular-nums}
+.shopping-panel .row-description{overflow-wrap:anywhere}
+@media(max-width:760px){.shopping-panel table{min-width:460px}.shopping-total{align-items:flex-start;flex-direction:column;gap:8px}}

@@ -26,6 +26,8 @@ Os controles que alteram registros ficam ocultos.
 - Despesas a cada 30 dias, mensais sem prazo ou com vencimento único.
 - Lançamentos automáticos com proteção contra duplicação.
 - Saldos iniciais editáveis e identificação de lançamentos previstos.
+- Lista de compras com itens editáveis, valores estimados e total da lista.
+- As estimativas de compras não alteram os saldos nem geram lançamentos.
 - Acesso privado por senha, sessões protegidas e troca de senha.
 
 ## Tecnologia
@@ -72,7 +74,7 @@ da conta e do banco. Há duas opções:
   `databaseId`.
 
 A configuração fica em `cloudflare.config.ts`. Aplique
-`migrations/0001_initial.sql` ao seu banco e configure o segredo
+os arquivos SQL de `migrations/` em ordem ao seu banco e configure o segredo
 `BOOTSTRAP_PASSWORD` no Worker antes de usar o acesso privado.
 
 ```bash
@@ -105,6 +107,7 @@ descartável. Não execute fixtures em produção:
 ```bash
 npm run db:local -- --fixtures
 npm run test:browser
+npm run test:shopping
 npm run test:auth
 ```
 
