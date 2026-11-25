@@ -14,6 +14,15 @@ export interface Account { id: 'PF' | 'PJ'; opening_balance: number; opening_dat
 /** A purchase wish with an estimated price in cents; never contributes to account balances. */
 export interface ShoppingItem { id: string; description: string; amount: number }
 
+/** Percentage of each received salary protected from discretionary spending. */
+export const SALARY_SAVINGS_PERCENT = 30;
+
+/** Savings already included in a balance, covering salary received before start_date.
+ * New salary entries on or after start_date add to this reserve without another deposit.
+ * The baseline is private account data, never a fictitious transaction or a balance debit.
+ */
+export interface SalaryReserveBaseline { account: 'PF' | 'PJ'; amount: number; start_date: string }
+
 /** Monthly expenses without deadlines are paid explicitly, after salary arrives. */
 export interface FixedExpense {
   id: string; description: string; amount: number; account: 'PF' | 'PJ'; category: string;
@@ -62,7 +71,9 @@ export interface SpendingRoom {
   balance: number;
   /** Unpaid fixed expenses through month end, including older outstanding occurrences. */
   reserved: number;
-  /** Non-negative balance remaining after the fixed-expense reserve. */
+  /** Accumulated salary savings, including any initial reserve already in the balance. */
+  savings: number;
+  /** Non-negative balance remaining after both fixed expenses and salary savings. */
   available: number;
   /** Amount missing when the current balance cannot cover the reserve. */
   shortfall: number;
@@ -75,9 +86,11 @@ export interface SpendingRoom {
  * Paid occurrences already affect the balance and are never deducted twice.
  * Future fixed entries reserve their recorded amount once, even if a rule was paused
  * or the payment was moved past its due month. Income forecasts and shopping wishes
- * are excluded. This is a calculation only; it never changes saved records.
+ * are excluded. Thirty percent of received salary remains reserved across months;
+ * an optional baseline covers salary already included in the opening balance.
+ * This is a calculation only; it never changes saved records or duplicates tithe.
  */
-export function spendingRoom(accounts: Account[], transactions: Transaction[], fixed: FixedExpense[], date: string, account = 'all'): SpendingRoom {
+export function spendingRoom(accounts: Account[], transactions: Transaction[], fixed: FixedExpense[], date: string, account = 'all', salaryReserve?: SalaryReserveBaseline | null): SpendingRoom {
   const month = date.slice(0, 7);
   const last = new Date(`${month}-01T12:00:00Z`);
   last.setUTCMonth(last.getUTCMonth() + 1);
@@ -86,6 +99,14 @@ export function spendingRoom(accounts: Account[], transactions: Transaction[], f
   const selected = accounts.filter(a => account === 'all' || a.id === account);
   const ids = new Set<string>(selected.map(a => a.id));
   const current = selected.reduce((sum, a) => sum + balance(a, transactions, date), 0);
+  const baseline = salaryReserve && salaryReserve.start_date <= date ? salaryReserve : null;
+  let savings = baseline && ids.has(baseline.account) ? baseline.amount : 0;
+  for (const a of selected) {
+    // A baseline covers earlier salaries; subsequent reserves remain protected after balance edits.
+    const start = baseline?.account === a.id ? baseline.start_date : a.opening_date;
+    savings += transactions.filter(t => t.account === a.id && t.kind === 'income' && t.category === 'Salário' && t.date >= start && t.date <= date)
+      .reduce((sum, t) => sum + Math.round(t.amount * SALARY_SAVINGS_PERCENT / 100), 0);
+  }
   const recorded = new Map(transactions.filter(t => t.kind === 'expense' && t.fixed_id && t.occurrence)
     .map(t => [`${t.fixed_id}:${t.occurrence}`, t]));
   const counted = new Set<string>();
@@ -121,7 +142,7 @@ export function spendingRoom(accounts: Account[], transactions: Transaction[], f
       else if (ids.has(rule.account)) reserved += rule.amount;
     }
   }
-  return { balance: current, reserved, available: Math.max(0, current - reserved), shortfall: Math.max(0, reserved - current), until };
+  return { balance: current, reserved, savings, available: Math.max(0, current - reserved - savings), shortfall: Math.max(0, reserved + savings - current), until };
 }
 
 /** Produces at most 1,200 month references, retaining unpaid monthly obligations. */

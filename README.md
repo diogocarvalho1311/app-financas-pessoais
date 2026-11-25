@@ -24,7 +24,13 @@ Os controles que alteram registros ficam ocultos.
 - Filtros por mês, intervalo personalizado, conta e movimento.
 - Resumo financeiro, distribuição por categoria e totais mensais.
 - Card de disponível para gastar: saldo atual menos fixas a pagar até o fim
-  do mês atual, incluindo pendências anteriores e respeitando a conta filtrada.
+  do mês atual e 30% dos salários recebidos para guardar. Inclui pendências
+  anteriores e respeita a conta filtrada.
+- A reserva de salário acumula entre meses; previsões não reservam dinheiro
+  antes do recebimento. O saldo e os lançamentos permanecem separados
+  desse cálculo. O dízimo continua nas fixas, sem desconto em duplicidade.
+- Uma reserva inicial privada pode cobrir salário já incluído no saldo
+  informado, sem criar outra entrada.
 - Fixas já pagas não são descontadas duas vezes; recebimentos futuros não
   aumentam o disponível. Se faltar saldo para a reserva, o card informa o valor.
 - Despesas a cada 30 dias, mensais sem prazo ou com vencimento único.

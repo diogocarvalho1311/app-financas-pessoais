@@ -1,8 +1,12 @@
 /** Shared, escaped markup and Brazilian formatting for the browser UI. */
-import type { Account, FixedExpense, ShoppingItem, Transaction } from './finance';
+import type { Account, FixedExpense, SalaryReserveBaseline, ShoppingItem, Transaction } from './finance';
 
 /** Snapshot returned by the authenticated API; never stored in browser localStorage. */
-export interface Data { accounts: Account[]; transactions: Transaction[]; fixed: FixedExpense[]; shopping: ShoppingItem[]; today: string }
+export interface Data {
+  accounts: Account[]; transactions: Transaction[]; fixed: FixedExpense[]; shopping: ShoppingItem[]; today: string;
+  /** Private initial salary reserve; absent in installations without an initial adjustment. */
+  salaryReserve?: SalaryReserveBaseline | null;
+}
 /** Navigation and filtering state for the single desktop workspace. */
 export interface State {
   /** Public demo mode renders fictional in-memory records and disables private actions. */

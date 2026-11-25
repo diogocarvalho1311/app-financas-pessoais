@@ -145,13 +145,17 @@ async function api(request: Request, env: Env): Promise<Response> {
   }
   if (path === '/api/data' && method === 'GET') {
     await reconcile(env.DB);
-    const [accounts, transactions, fixed, shopping] = await env.DB.batch([
+    const [accounts, transactions, fixed, shopping, salaryReserve] = await env.DB.batch([
       env.DB.prepare('SELECT * FROM accounts ORDER BY id'),
       env.DB.prepare('SELECT * FROM transactions WHERE deleted=0 ORDER BY date DESC,created_at DESC'),
       env.DB.prepare('SELECT * FROM fixed_expenses ORDER BY description'),
       env.DB.prepare('SELECT id,description,amount FROM shopping_items ORDER BY created_at DESC,id DESC'),
+      // The private initial reserve does not create a ledger entry or alter account balances.
+      env.DB.prepare("SELECT value FROM settings WHERE key='salary_reserve'"),
     ]);
-    return Response.json({ accounts: accounts.results, transactions: transactions.results, fixed: fixed.results, shopping: shopping.results, today: today() });
+    const baseline = salaryReserve.results[0] as { value: string } | undefined;
+    return Response.json({ accounts: accounts.results, transactions: transactions.results, fixed: fixed.results, shopping: shopping.results,
+      salaryReserve: baseline ? JSON.parse(baseline.value) : null, today: today() });
   }
   // Wishlist mutations require the same session and same-origin checks as ledger entries.
   const shoppingMatch = path.match(/^\/api\/shopping(?:\/([\w-]+))?$/);

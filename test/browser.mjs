@@ -4,7 +4,11 @@ import { readFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { addDays } from '../src/finance.ts';
 
-const origin = 'http://127.0.0.1:5173';
+// PREVIEW_ORIGIN may select another local port when 5173 is used by another project.
+const origin = process.env.PREVIEW_ORIGIN ?? 'http://127.0.0.1:5173';
+if (!['127.0.0.1', 'localhost'].includes(new URL(origin).hostname) || new URL(origin).protocol !== 'http:') {
+  throw new Error('Execute testes de escrita somente em um servidor HTTP local com banco descartável.');
+}
 const password = (await readFile('.dev.vars', 'utf8')).match(/BOOTSTRAP_PASSWORD="([^"]+)"/)[1];
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const page = await browser.newPage({ viewport: { width: 1440, height: 1050 } });
@@ -14,6 +18,18 @@ const request = async (path, method = 'GET', data) => page.evaluate(async ({ pat
   const response = await fetch(`/api${path}`, { method, headers: { 'Content-Type': 'application/json' }, body: data === undefined ? undefined : JSON.stringify(data) });
   return { status: response.status, data: await response.json() };
 }, { path, method, data });
+
+/** Sets only the salary baseline in the disposable local D1; never contacts Cloudflare production. */
+async function salaryBaseline(value) {
+  const explorer = `${origin}/cdn-cgi/local/explorer/api/d1/database`;
+  const databases = await (await fetch(explorer)).json();
+  const db = databases.result.find(item => item.name === 'DB');
+  const sql = "DELETE FROM settings WHERE key='salary_reserve';" + (value
+    ? `INSERT INTO settings VALUES ('salary_reserve','${JSON.stringify(value).replaceAll("'", "''")}');` : '');
+  const response = await fetch(`${explorer}/${db.uuid}/raw`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sql }) });
+  assert.equal((await response.json()).success, true);
+}
+let injectedBaseline = false;
 
 try {
   await page.goto(origin);
@@ -28,6 +44,22 @@ try {
   assert.equal(initial.fixed.find(r => r.id === 'music').next_date, addDays(initial.today, 3));
   assert.equal(initial.fixed.find(r => r.id === 'cloud').next_date, addDays(initial.today, 30));
 
+  assert.equal(initial.salaryReserve, null);
+  const baseline = { account: 'PF', amount: 30000, start_date: initial.today };
+  injectedBaseline = true;
+  await salaryBaseline(baseline);
+  await page.reload();
+  await page.getByRole('heading', { name: 'Entradas e saídas', exact: true }).waitFor();
+  const reserved = (await request('/data')).data;
+  assert.deepEqual(reserved.salaryReserve, baseline);
+  assert.deepEqual(reserved.accounts, initial.accounts);
+  assert.deepEqual(reserved.transactions, initial.transactions);
+  assert.match(await page.locator('.metric.spending').innerText(), /Para guardar \(30% do salário\):.*300,00/);
+  await salaryBaseline(null);
+  injectedBaseline = false;
+  await page.reload();
+  await page.getByRole('heading', { name: 'Entradas e saídas', exact: true }).waitFor();
+
   await page.getByRole('button', { name: 'Novo lançamento', exact: true }).click();
   await page.getByLabel('Movimento', { exact: true }).selectOption('income');
   await page.getByLabel('Descrição', { exact: true }).fill('Salário teste');
@@ -36,11 +68,13 @@ try {
   await page.getByRole('button', { name: 'Salvar', exact: true }).click();
   await page.getByRole('cell', { name: 'Salário teste', exact: true }).waitFor();
   assert.match(await page.locator('.metric.balance').innerText(), /3\.375,76/);
+  assert.match(await page.locator('.metric.spending').innerText(), /37,73/);
   await page.getByRole('button', { name: 'Editar Salário teste', exact: true }).click();
   await page.getByLabel('Valor (R$)', { exact: true }).fill('100,00');
   await page.getByRole('button', { name: 'Salvar', exact: true }).click();
   await page.locator('dialog').waitFor({ state: 'hidden' });
   assert.match(await page.locator('.metric.balance').innerText(), /3\.350,00/);
+  assert.match(await page.locator('.metric.spending').innerText(), /30,00/);
   await page.getByRole('searchbox').fill('não existe');
   await page.getByRole('heading', { name: 'Nenhum lançamento encontrado' }).waitFor();
   await page.getByRole('searchbox').fill('');
@@ -119,4 +153,4 @@ try {
   assert.equal((await request('/data')).status, 401);
   assert.deepEqual(errors, []);
   console.log('PASS: login, balances, create/edit/delete, filters, tithes, idempotency, CSRF, validation, future dates, dashboard, accounts, responsive layout and logout.');
-} finally { await browser.close(); }
+} finally { try { if (injectedBaseline) await salaryBaseline(null); } finally { await browser.close(); } }

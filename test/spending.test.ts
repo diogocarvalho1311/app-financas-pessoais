@@ -21,7 +21,7 @@ function entry(overrides: Partial<Transaction> = {}): Transaction {
 test('current-month room includes arrears and remains unchanged when a reserved bill is paid', () => {
   const rules = [rule()];
   const before = spendingRoom(accounts, [], rules, '2026-06-18', 'PF');
-  assert.deepEqual(before, { balance: 100000, reserved: 30000, available: 70000, shortfall: 0, until: '2026-06-30' });
+  assert.deepEqual(before, { balance: 100000, reserved: 30000, savings: 0, available: 70000, shortfall: 0, until: '2026-06-30' });
   const paid = spendingRoom(accounts, [entry()], rules, '2026-06-18', 'PF');
   assert.equal(paid.balance, 90000);
   assert.equal(paid.reserved, 20000);
@@ -103,4 +103,48 @@ test('month-end follows leap years and preserves paid monthly occurrences from p
   const rules = [rule({ start_month: '2026-12' })];
   const payments = [entry({ occurrence: '2026-12', date: '2026-12-31' })];
   assert.equal(spendingRoom(accounts, payments, rules, '2027-01-15').reserved, 10000);
+});
+
+test('salary reserves thirty percent only after receipt, by account, with cent rounding', () => {
+  const salary = entry({ id: 'salary', kind: 'income', category: 'Salário', amount: 10001, fixed_id: null, occurrence: null });
+  const forecast = { ...salary, id: 'forecast', account: 'PJ' as const, date: '2026-06-25', amount: 90000 };
+  const ordinary = { ...salary, id: 'other-income', category: 'Mãe', amount: 20000 };
+  const old = { ...salary, id: 'old', date: '2025-12-31', amount: 50000 };
+  const tx = [salary, forecast, ordinary, old];
+  const room = spendingRoom(accounts, tx, [], '2026-06-18');
+  assert.equal(room.savings, 3000);
+  assert.equal(room.available, room.balance - 3000);
+  assert.equal(spendingRoom(accounts, tx, [], '2026-06-18', 'PJ').savings, 0);
+  assert.equal(spendingRoom(accounts, tx, [], '2026-06-25').savings, 30000);
+  assert.equal(spendingRoom(accounts, [{ ...salary, amount: 20000 }], [], '2026-06-18').savings, 6000);
+  assert.equal(spendingRoom(accounts, [], [], '2026-06-18').savings, 0, 'Deleting a salary removes only its calculated reserve');
+});
+
+test('an initial reserve protects salary already in the balance and persists across months', () => {
+  const baseline = { account: 'PF' as const, amount: 30000, start_date: '2026-06-18' };
+  const initial = spendingRoom(accounts, [], [rule()], '2026-06-18', 'PF', baseline);
+  assert.equal(initial.balance, 100000, 'The baseline must not create another income or debit');
+  assert.equal(initial.reserved, 30000, 'Tithes remain part of fixed expenses, once');
+  assert.equal(initial.savings, 30000);
+  assert.equal(initial.available, 40000);
+  assert.equal(spendingRoom(accounts, [], [], '2026-06-18', 'PJ', baseline).savings, 0);
+  const nextSalary = entry({ kind: 'income', category: 'Salário', amount: 100000, fixed_id: null, occurrence: null, date: '2026-07-05' });
+  const earlierSalary = { ...nextSalary, id: 'already-covered', date: '2026-06-10' };
+  const beforePayday = spendingRoom(accounts, [earlierSalary, nextSalary], [], '2026-07-01', 'PF', baseline);
+  assert.equal(beforePayday.savings, 30000, 'Month changes and a forecast do not release savings');
+  assert.equal(spendingRoom(accounts, [nextSalary], [], '2026-07-05', 'PF', baseline).savings, 60000);
+  assert.equal(spendingRoom(accounts, [nextSalary], [], '2026-08-05', 'PF', baseline).savings, 60000);
+  const todaySalary = { ...nextSalary, date: baseline.start_date };
+  assert.equal(spendingRoom(accounts, [todaySalary], [], baseline.start_date, 'PF', baseline).savings, 60000);
+});
+
+test('paying an already reserved tithe does not double-charge savings and shortfalls include both reserves', () => {
+  const baseline = { account: 'PF' as const, amount: 30000, start_date: '2026-06-01' };
+  const before = spendingRoom(accounts, [], [rule()], '2026-06-18', 'PF', baseline);
+  const after = spendingRoom(accounts, [entry()], [rule()], '2026-06-18', 'PF', baseline);
+  assert.equal(before.available, after.available);
+  assert.equal(after.savings, before.savings);
+  const insufficient = spendingRoom([{ ...accounts[0], opening_balance: 20000 }], [], [rule()], '2026-06-18', 'PF', baseline);
+  assert.equal(insufficient.available, 0);
+  assert.equal(insufficient.shortfall, 40000);
 });

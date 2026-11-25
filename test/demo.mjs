@@ -20,8 +20,9 @@ try {
   assert.equal(await page.locator('[data-edit], [data-delete], [data-pay], [data-action="new-transaction"]').count(), 0);
   const body = await page.locator('body').innerText();
   assert.ok(body.includes('Salário de exemplo'));
-  assert.match(await page.locator('.metric.spending .metric-value').innerText(), /6\.827,05/);
+  assert.match(await page.locator('.metric.spending .metric-value').innerText(), /5\.207,05/);
   assert.match(await page.locator('.metric.spending').innerText(), /420,00/);
+  assert.match(await page.locator('.metric.spending').innerText(), /Para guardar \(30% do salário\):.*1\.620,00/);
   assert.match(await page.locator('.metric.spending').innerText(), /30\/06\/2026/);
   await mkdir('docs', { recursive: true });
   await page.screenshot({ path: 'docs/demo.png', fullPage: true });
@@ -34,16 +35,16 @@ try {
   await page.getByRole('searchbox').fill('');
   await page.getByLabel('Filtrar por conta').selectOption('PJ');
   assert.ok(!(await page.locator('table').innerText()).includes('Salário de exemplo'));
-  assert.match(await page.locator('.metric.spending .metric-value').innerText(), /1\.670,10/);
+  assert.match(await page.locator('.metric.spending .metric-value').innerText(), /1\.400,10/);
   await page.getByLabel('Filtrar por conta').selectOption('PF');
-  assert.match(await page.locator('.metric.spending .metric-value').innerText(), /5\.156,95/);
+  assert.match(await page.locator('.metric.spending .metric-value').innerText(), /3\.806,95/);
   await page.getByLabel('Filtrar por conta').selectOption('all');
   await page.getByRole('button', { name: 'Resumo', exact: true }).click();
   await page.getByRole('button', { name: 'Personalizado', exact: true }).click();
   await page.getByLabel('Data inicial', { exact: true }).fill('2026-04-01');
   await page.getByLabel('Data final', { exact: true }).fill('2026-06-30');
   assert.equal(await page.locator('.monthly-summary tbody tr').count(), 3);
-  assert.match(await page.locator('.metric.spending .metric-value').innerText(), /6\.827,05/, 'Changing the report period must not change current spending room');
+  assert.match(await page.locator('.metric.spending .metric-value').innerText(), /5\.207,05/, 'Changing the report period must not change current spending room');
   for (const width of [1440, 1024, 768, 320]) {
     await page.setViewportSize({ width, height: 1100 });
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Summary overflow at ${width}`);
