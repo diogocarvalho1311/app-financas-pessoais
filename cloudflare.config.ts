@@ -14,6 +14,8 @@ export default defineConfig({
     entrypoint: './src/worker.ts',
     compatibilityDate: '2026-11-22',
     workersDev: true,
+    // Preserve the existing choice to serve the app only at its main workers.dev URL.
+    previewUrls: false,
     // Public preview paths render the SPA; API paths always run authentication first.
     assets: { notFoundHandling: 'single-page-application', runWorkerFirst: ['/api/*'] },
     env: {
