@@ -91,6 +91,30 @@ O Cron registra despesas automáticas diariamente às 06h de São Paulo.
 A API também concilia ocorrências pendentes quando o aplicativo é aberto.
 Essa automação apenas registra lançamentos; ela não faz pagamentos bancários.
 
+## Usar contas diferentes por projeto
+
+O CLI permite manter os logins pessoal e de trabalho em perfis separados.
+Na pasta deste projeto, autentique e associe seu perfil pessoal uma vez:
+
+```bash
+npx cf auth create pessoal
+npx cf auth activate pessoal
+npx cf auth whoami
+```
+
+Na pasta de um projeto de trabalho, use outro perfil:
+
+```bash
+npx cf auth create trabalho
+npx cf auth activate trabalho
+```
+
+A associação vale para a pasta e suas subpastas, sem encerrar o outro login.
+Depois da configuração, publique com `npm run deploy`. Para conferir os perfis,
+use `npx cf auth list`. A autenticação pode precisar ser refeita se for revogada.
+
+Consulte a [documentação de perfis do CLI][profiles].
+
 ## Testes
 
 ```bash
@@ -126,3 +150,4 @@ A demonstração utiliza um conjunto separado em `src/demo.ts`, sem persistênci
 As licenças das fontes estão em `public/fonts`.
 
 [demo]: https://minhas-financas-pessoais.carvalhodiogo746.workers.dev/demo
+[profiles]: https://developers.cloudflare.com/cf/get-started/#use-named-profiles
