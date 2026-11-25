@@ -1,5 +1,5 @@
 /** Pure HTML views for the finance workspace, with all dynamic text escaped. */
-import { balance, CATEGORIES, monthsBetween, type FixedExpense } from './finance';
+import { balance, CATEGORIES, monthsBetween, spendingRoom, type FixedExpense } from './finance';
 import { categoryTag, dateLabel, esc, icon, money, monthLabel, range, rows, totals, type State } from './ui';
 
 /** Calculates missing monthly payments; no deadline is invented for the tithe. */
@@ -24,12 +24,13 @@ function period(state: State): string {
     <span class="period-description">${dateLabel(from)} a ${dateLabel(to)}</span></div>`;
 }
 
-/** Current balances are independent of selected period; cash flow only includes realized rows. */
+/** Current balance and spending room ignore period filters; realized cash flow respects them. */
 function metrics(state: State): string {
   const accounts = state.data.accounts.filter(a => state.account === 'all' || a.id === state.account);
-  const current = accounts.reduce((sum, a) => sum + balance(a, state.data.transactions, state.data.today), 0);
+  const room = spendingRoom(state.data.accounts, state.data.transactions, state.data.fixed, state.data.today, state.account);
   const total = totals(rows(state).filter(t => t.date <= state.data.today));
-  return `<section class="metrics" aria-label="Resumo financeiro"><article class="metric balance"><div class="metric-label">Saldo atual ${state.account !== 'all' ? `· ${state.account}` : ''}<span class="round-icon">${icon('wallet')}</span></div><div class="metric-value">${money(current)}</div><div class="metric-note account-inline">${accounts.map(a => `<span><strong>${a.id}</strong> ${money(balance(a, state.data.transactions, state.data.today))}</span>`).join('')}</div></article>
+  return `<section class="metrics" aria-label="Resumo financeiro"><article class="metric balance"><div class="metric-label">Saldo atual ${state.account !== 'all' ? `· ${state.account}` : ''}<span class="round-icon">${icon('wallet')}</span></div><div class="metric-value">${money(room.balance)}</div><div class="metric-note account-inline">${accounts.map(a => `<span><strong>${a.id}</strong> ${money(balance(a, state.data.transactions, state.data.today))}</span>`).join('')}</div></article>
+    <article class="metric spending" aria-label="Disponível para gastar"><div class="metric-label">Disponível para gastar${state.account !== 'all' ? ` · ${state.account}` : ''}<span class="round-icon">${icon('cart')}</span></div><div class="metric-value">${money(room.available)}</div><p class="metric-note">Saldo menos <strong>${money(room.reserved)}</strong> em fixas.</p><p class="spending-period">Até ${dateLabel(room.until)} · inclui atrasadas</p>${room.shortfall ? `<p class="spending-shortfall">Faltam ${money(room.shortfall)} para cobrir a reserva.</p>` : ''}</article>
     <article class="metric income"><div class="metric-label">Entradas no período<span class="round-icon">${icon('down')}</span></div><div class="metric-value">${money(total.income)}</div><p class="metric-note">Recebimentos realizados</p></article>
     <article class="metric expense"><div class="metric-label">Saídas no período<span class="round-icon">${icon('up')}</span></div><div class="metric-value">${money(total.expense)}</div><p class="metric-note">Pagamentos realizados</p></article></section>`;
 }

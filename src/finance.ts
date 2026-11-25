@@ -56,6 +56,74 @@ export function balance(account: Account, transactions: Transaction[], until: st
     .reduce((sum, t) => sum + (t.kind === 'income' ? t.amount : -t.amount), 0);
 }
 
+/** A current-month spending estimate; all monetary fields are integer cents. */
+export interface SpendingRoom {
+  /** Today's balance of the selected accounts, excluding future income and payments. */
+  balance: number;
+  /** Unpaid fixed expenses through month end, including older outstanding occurrences. */
+  reserved: number;
+  /** Non-negative balance remaining after the fixed-expense reserve. */
+  available: number;
+  /** Amount missing when the current balance cannot cover the reserve. */
+  shortfall: number;
+  /** Last calendar day of the current month, independent of the transaction filters. */
+  until: string;
+}
+
+/**
+ * Reserves unpaid fixed obligations through the end of today's month, by account.
+ * Paid occurrences already affect the balance and are never deducted twice.
+ * Future fixed entries reserve their recorded amount once, even if a rule was paused
+ * or the payment was moved past its due month. Income forecasts and shopping wishes
+ * are excluded. This is a calculation only; it never changes saved records.
+ */
+export function spendingRoom(accounts: Account[], transactions: Transaction[], fixed: FixedExpense[], date: string, account = 'all'): SpendingRoom {
+  const month = date.slice(0, 7);
+  const last = new Date(`${month}-01T12:00:00Z`);
+  last.setUTCMonth(last.getUTCMonth() + 1);
+  last.setUTCDate(0);
+  const until = last.toISOString().slice(0, 10);
+  const selected = accounts.filter(a => account === 'all' || a.id === account);
+  const ids = new Set<string>(selected.map(a => a.id));
+  const current = selected.reduce((sum, a) => sum + balance(a, transactions, date), 0);
+  const recorded = new Map(transactions.filter(t => t.kind === 'expense' && t.fixed_id && t.occurrence)
+    .map(t => [`${t.fixed_id}:${t.occurrence}`, t]));
+  const counted = new Set<string>();
+  let reserved = 0;
+
+  /** A recorded future payment keeps its actual amount and account, once per entry. */
+  const reserveEntry = (t: Transaction): void => {
+    if (t.date > date && ids.has(t.account) && !counted.has(t.id)) {
+      reserved += t.amount;
+      counted.add(t.id);
+    }
+  };
+  for (const t of transactions) {
+    if (t.kind !== 'expense' || !t.fixed_id || t.date <= date) continue;
+    const due = t.occurrence;
+    const dueByMonthEnd = due && ((/^20\d{2}-\d{2}$/.test(due) && due <= month) || (validDate(due) && due <= until));
+    if (t.date <= until || dueByMonthEnd) reserveEntry(t);
+  }
+  for (const rule of fixed) {
+    if (!rule.enabled) continue;
+    const occurrences = rule.cadence === 'monthly' ? monthsBetween(rule.start_month ?? month, month) : [];
+    if (rule.cadence !== 'monthly') {
+      let due = rule.next_date;
+      // The supported 2000–2099 range contains fewer than 1,220 thirty-day charges.
+      for (let count = 0; due && due <= until && count < 1220; count++) {
+        occurrences.push(due);
+        due = rule.cadence === '30days' ? addDays(due, 30) : null;
+      }
+    }
+    for (const occurrence of occurrences) {
+      const entry = recorded.get(`${rule.id}:${occurrence}`);
+      if (entry) reserveEntry(entry);
+      else if (ids.has(rule.account)) reserved += rule.amount;
+    }
+  }
+  return { balance: current, reserved, available: Math.max(0, current - reserved), shortfall: Math.max(0, reserved - current), until };
+}
+
 /** Produces at most 1,200 month references, retaining unpaid monthly obligations. */
 export function monthsBetween(start: string, end: string): string[] {
   const result: string[] = [];

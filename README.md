@@ -23,6 +23,10 @@ Os controles que alteram registros ficam ocultos.
 - Categorias Salário, Compra, Dízimo e Mãe.
 - Filtros por mês, intervalo personalizado, conta e movimento.
 - Resumo financeiro, distribuição por categoria e totais mensais.
+- Card de disponível para gastar: saldo atual menos fixas a pagar até o fim
+  do mês atual, incluindo pendências anteriores e respeitando a conta filtrada.
+- Fixas já pagas não são descontadas duas vezes; recebimentos futuros não
+  aumentam o disponível. Se faltar saldo para a reserva, o card informa o valor.
 - Despesas a cada 30 dias, mensais sem prazo ou com vencimento único.
 - Lançamentos automáticos com proteção contra duplicação.
 - Saldos iniciais editáveis e identificação de lançamentos previstos.

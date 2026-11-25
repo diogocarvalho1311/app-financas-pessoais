@@ -64,3 +64,7 @@
 .shopping-total{background:var(--mint);color:#26382e}.shopping-total strong{color:#000;font-size:20px;margin-left:12px;font-variant-numeric:tabular-nums}
 .shopping-panel .row-description{overflow-wrap:anywhere}
 @media(max-width:760px){.shopping-panel table{min-width:460px}.shopping-total{align-items:flex-start;flex-direction:column;gap:8px}}
+/* Current spending room shares the existing summary row and shows its month-end reserve. */
+.metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.metric.spending{background:var(--mint)}.metric.spending .metric-value{overflow-wrap:anywhere}.spending-period{font-size:12px;margin-top:6px;color:#26382e}.spending-shortfall{font-size:13px;font-weight:600;margin-top:10px}
+@media(max-width:1150px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.metric.spending{grid-column:1/-1;min-height:auto}}
