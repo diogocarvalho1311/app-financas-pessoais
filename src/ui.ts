@@ -33,6 +33,7 @@ export function monthLabel(month: string): string { return new Date(`${month}-01
 /** Local outline icons keep the UI independent of external image and font services. */
 export function icon(name: string): string {
   const paths: Record<string, string> = {
+    calculator: '<rect x="5" y="2" width="14" height="20" rx="3"/><path d="M8 6h8v4H8zM8 14h1m3 0h1m3 0h0M8 18h1m3 0h1m3 0h0"/>',
     plus: '<path d="M12 5v14M5 12h14"/>', close: '<path d="m6 6 12 12M6 18 18 6"/>',
     edit: '<path d="m16 3 5 5-12 12-6 1 1-6ZM13 6l5 5"/>', trash: '<path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/>',
     search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/>',

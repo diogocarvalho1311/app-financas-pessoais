@@ -5,8 +5,10 @@ import { accountForm, deleteForm, deleteShoppingForm, fixedForm, passwordForm, p
 import { api, dateLabel, esc, rows, toast, type Data, type State } from './ui';
 import { loginView, view } from './views';
 import { createDemoData, DEMO_DATE } from './demo';
+import { mountCalculator } from './calculator';
 
 const app = document.querySelector<HTMLDivElement>('#app')!;
+const calculator = mountCalculator();
 const demo = /^\/demo\/?$/.test(location.pathname);
 const date = demo ? DEMO_DATE : today();
 const state: State = {
@@ -20,6 +22,7 @@ let refreshVersion = 0;
 
 /** Repaints while preserving the focused filter and its text selection. */
 function render(): void {
+  calculator.setVisible(true);
   const focused = document.activeElement as HTMLInputElement | null;
   const key = focused?.dataset.filter;
   const selection = focused?.selectionStart;
@@ -46,6 +49,7 @@ async function refresh(): Promise<void> {
 
 /** A missing or expired session returns to login and clears in-memory financial records. */
 function login(error = ''): void {
+  calculator.setVisible(false);
   refreshVersion++;
   loggedIn = false;
   state.data = { accounts: [], transactions: [], fixed: [], shopping: [], today: today() };

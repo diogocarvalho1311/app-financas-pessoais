@@ -1,0 +1,35 @@
+/* Corner utility follows the site's mint accents, outlined controls and type scale. */
+.calculator[hidden], .calculator-panel[hidden] { display: none; }
+.calculator-launcher {
+  position: fixed; right: 24px; bottom: 24px; z-index: 15;
+  width: 56px; height: 56px; display: grid; place-items: center;
+  border: var(--line); border-radius: 50%; background: var(--mint);
+  box-shadow: 0 4px 16px #0002;
+}
+.calculator-launcher:hover { background: #8de8ba; }
+.calculator-launcher .icon { width: 25px; height: 25px; }
+.calculator-panel {
+  position: fixed; right: 24px; bottom: 96px; z-index: 15;
+  width: 320px; max-width: calc(100vw - 32px); max-height: calc(100dvh - 112px);
+  overflow: auto; border: var(--line); border-radius: 24px;
+  background: #fff; padding: 20px; box-shadow: 0 12px 36px #0002;
+}
+.calculator-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.calculator-heading h2 { font-size: 20px; letter-spacing: -.5px; }
+.calculator-heading .icon-button { width: 32px; min-height: 32px; }
+.calculator-screen { background: #f3f7f5; border: var(--line); border-radius: 16px; padding: 12px 16px; margin: 16px 0; text-align: right; }
+.calculator-expression { min-height: 20px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.calculator-display { display: block; font: 600 30px/1.25 'Space Grotesk', sans-serif; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-height: 38px; border-radius: 4px; }
+.calculator-display:focus-visible { outline: 3px solid var(--violet); outline-offset: 3px; }
+.calculator-keys { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.calculator-key { border: var(--line); border-radius: 12px; min-height: 44px; background: #fff; font-size: 18px; font-weight: 600; }
+.calculator-key:hover { background: #f0f3f2; }
+.calculator-key:active { transform: translateY(1px); }
+.calculator-operator { background: var(--lavender); }
+.calculator-equals { background: var(--mint); }
+.calculator-help { font-size: 11px; color: var(--muted); margin-top: 12px; }
+@media (max-width: 760px) {
+  .calculator-launcher { right: 16px; bottom: 16px; }
+  .calculator-panel { right: 16px; bottom: 88px; max-height: calc(100dvh - 104px); }
+}
+@media (prefers-reduced-motion: reduce) { .calculator-key:active { transform: none; } }
